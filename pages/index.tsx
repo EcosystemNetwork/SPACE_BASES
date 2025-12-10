@@ -1,7 +1,24 @@
 import { usePrivy } from '@privy-io/react-auth';
 
-export default function Home() {
+// Check if Privy is configured
+const isPrivyConfigured = () => {
+  const privyAppId = process.env.NEXT_PUBLIC_PRIVY_API_KEY;
+  return privyAppId && privyAppId.trim() !== '' && privyAppId.startsWith('clp');
+};
+
+// Component that uses Privy hooks
+function HomeWithPrivy() {
   const { ready, authenticated, user, login, logout } = usePrivy();
+  return <HomeContent ready={ready} authenticated={authenticated} user={user} login={login} logout={logout} />;
+}
+
+// Component without Privy hooks
+function HomeWithoutPrivy() {
+  return <HomeContent ready={false} authenticated={false} user={null} login={() => {}} logout={() => {}} />;
+}
+
+// Main content component
+function HomeContent({ ready, authenticated, user, login, logout }: any) {
 
   return (
     <div className="page-wrapper">
@@ -192,4 +209,9 @@ export default function Home() {
       </footer>
     </div>
   );
+}
+
+// Export the appropriate component based on Privy configuration
+export default function Home() {
+  return isPrivyConfigured() ? <HomeWithPrivy /> : <HomeWithoutPrivy />;
 }

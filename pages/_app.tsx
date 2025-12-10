@@ -15,9 +15,29 @@ export default function App({ Component, pageProps }: AppProps) {
     return <Component {...pageProps} />;
   }
 
+  // Check if Privy API key is configured
+  const privyAppId = process.env.NEXT_PUBLIC_PRIVY_API_KEY;
+  const isPrivyConfigured = privyAppId && 
+                           privyAppId.trim() !== '' && 
+                           privyAppId.startsWith('clp');
+
+  // If Privy is not configured, show warning banner
+  if (!isPrivyConfigured) {
+    return (
+      <>
+        <div className="config-warning-banner">
+          <strong>⚠️ Configuration Required:</strong>
+          Please set NEXT_PUBLIC_PRIVY_API_KEY in your .env file. 
+          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> to get your API key.
+        </div>
+        <Component {...pageProps} />
+      </>
+    );
+  }
+
   return (
     <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_API_KEY || ''}
+      appId={privyAppId}
       config={{
         // Customize Privy appearance and behavior
         appearance: {

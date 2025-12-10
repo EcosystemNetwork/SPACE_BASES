@@ -549,3 +549,43 @@ html {
   background: var(--accent-primary);
   color: white;
 }
+
+/* Configuration Warning Banner */
+.config-warning-banner {
+  background: linear-gradient(135deg, #ff6b6b, #ff8c42);
+  color: white;
+  padding: 16px 24px;
+  text-align: center;
+  font-weight: 500;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.3s ease-out;
+}
+
+.config-warning-banner strong {
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.config-warning-banner a {
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.config-warning-banner a:hover {
+  opacity: 0.8;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
