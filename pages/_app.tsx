@@ -2,6 +2,7 @@ import type { AppProps } from 'next/app';
 import { PrivyProvider } from '@privy-io/react-auth';
 import '../styles/globals.css';
 import { useEffect, useState } from 'react';
+import { isPrivyConfigured } from '../lib/privy-config';
 
 export default function App({ Component, pageProps }: AppProps) {
   const [mounted, setMounted] = useState(false);
@@ -15,14 +16,10 @@ export default function App({ Component, pageProps }: AppProps) {
     return <Component {...pageProps} />;
   }
 
-  // Check if Privy API key is configured
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_API_KEY;
-  const isPrivyConfigured = privyAppId && 
-                           privyAppId.trim() !== '' && 
-                           privyAppId.startsWith('clp');
 
   // If Privy is not configured, show warning banner
-  if (!isPrivyConfigured) {
+  if (!isPrivyConfigured()) {
     return (
       <>
         <div className="config-warning-banner">
