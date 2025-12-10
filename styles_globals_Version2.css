@@ -1,0 +1,63 @@
+/* Minimal reset + simple styles */
+:root {
+  --bg: #0b1220;
+  --card: #0f1a2b;
+  --accent: #7b61ff;
+  --muted: #9aa7b2;
+  --text: #e6eef6;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #03040a 0%, #061025 100%);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: 980px;
+  margin: 40px auto;
+  padding: 24px;
+}
+.card {
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 6px 24px rgba(3,6,20,0.6);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #8f72ff, #4ee3b1);
+  color: #041227;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+.small {
+  font-size: 14px;
+  color: var(--muted);
+}
+.header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.logo {
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.logo .name {
+  font-weight:800;
+  font-size:20px;
+}
