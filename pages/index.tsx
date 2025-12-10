@@ -1,7 +1,48 @@
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, User } from '@privy-io/react-auth';
 
-export default function Home() {
+// Configuration instructions constant
+const CONFIG_INSTRUCTIONS = `⚠️ Authentication not configured!
+
+Please set up your Privy API key:
+1. Copy .env.example to .env
+2. Add your NEXT_PUBLIC_PRIVY_API_KEY
+3. Restart the development server
+
+Get your API key at: https://dashboard.privy.io`;
+
+// Component that uses Privy when configured
+function HomeWithPrivy() {
   const { ready, authenticated, user, login, logout } = usePrivy();
+  return <HomeContent ready={ready} authenticated={authenticated} user={user} login={login} logout={logout} />;
+}
+
+// Component for when Privy is not configured
+function HomeWithoutPrivy() {
+  const login = () => {
+    alert(CONFIG_INSTRUCTIONS);
+  };
+  return <HomeContent ready={true} authenticated={false} user={null} login={login} logout={() => {}} />;
+}
+
+// Main component that checks configuration
+export default function Home() {
+  const isPrivyConfigured = !!process.env.NEXT_PUBLIC_PRIVY_API_KEY;
+  
+  if (isPrivyConfigured) {
+    return <HomeWithPrivy />;
+  }
+  return <HomeWithoutPrivy />;
+}
+
+// Shared UI component
+function HomeContent({ ready, authenticated, user, login, logout }: {
+  ready: boolean;
+  authenticated: boolean;
+  user: User | null;
+  login: () => void;
+  logout: () => void;
+}) {
+  const isPrivyConfigured = !!process.env.NEXT_PUBLIC_PRIVY_API_KEY;
 
   return (
     <div className="page-wrapper">
@@ -40,6 +81,14 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Configuration Warning Banner */}
+      {!isPrivyConfigured && (
+        <div className="config-warning-banner">
+          ⚠️ <strong>Configuration Required:</strong> Please set up your Privy API key in the .env file. 
+          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> to get your credentials.
+        </div>
+      )}
 
       <main className="main">
         <div className="container">
