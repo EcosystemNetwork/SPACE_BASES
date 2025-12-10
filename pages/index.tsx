@@ -9,8 +9,6 @@ interface HomeContentProps {
   logout: () => void;
 }
 
-// Component that uses Privy hooks
-
 // Configuration instructions constant
 const CONFIG_INSTRUCTIONS = `⚠️ Authentication not configured!
 
@@ -21,19 +19,12 @@ Please set up your Privy API key:
 
 Get your API key at: https://dashboard.privy.io`;
 
-// Component that uses Privy when configured
+// Component that uses Privy hooks when configured
 function HomeWithPrivy() {
   const { ready, authenticated, user, login, logout } = usePrivy();
   return <HomeContent ready={ready} authenticated={authenticated} user={user} login={login} logout={logout} />;
 }
 
-// Component without Privy hooks
-function HomeWithoutPrivy() {
-  return <HomeContent ready={false} authenticated={false} user={null} login={() => {}} logout={() => {}} />;
-}
-
-// Main content component
-function HomeContent({ ready, authenticated, user, login, logout }: HomeContentProps) {
 // Component for when Privy is not configured
 function HomeWithoutPrivy() {
   const login = () => {
@@ -42,24 +33,8 @@ function HomeWithoutPrivy() {
   return <HomeContent ready={true} authenticated={false} user={null} login={login} logout={() => {}} />;
 }
 
-// Main component that checks configuration
-export default function Home() {
-  const isPrivyConfigured = !!process.env.NEXT_PUBLIC_PRIVY_API_KEY;
-  
-  if (isPrivyConfigured) {
-    return <HomeWithPrivy />;
-  }
-  return <HomeWithoutPrivy />;
-}
-
 // Shared UI component
-function HomeContent({ ready, authenticated, user, login, logout }: {
-  ready: boolean;
-  authenticated: boolean;
-  user: User | null;
-  login: () => void;
-  logout: () => void;
-}) {
+function HomeContent({ ready, authenticated, user, login, logout }: HomeContentProps) {
   const isPrivyConfigured = !!process.env.NEXT_PUBLIC_PRIVY_API_KEY;
 
   return (
@@ -261,7 +236,7 @@ function HomeContent({ ready, authenticated, user, login, logout }: {
   );
 }
 
-// Export the appropriate component based on Privy configuration
+// Main component that checks configuration
 export default function Home() {
   return isPrivyConfigured() ? <HomeWithPrivy /> : <HomeWithoutPrivy />;
 }
