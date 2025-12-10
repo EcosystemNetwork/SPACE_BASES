@@ -1,4 +1,14 @@
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, User } from '@privy-io/react-auth';
+
+// Configuration instructions constant
+const CONFIG_INSTRUCTIONS = `⚠️ Authentication not configured!
+
+Please set up your Privy API key:
+1. Copy .env.example to .env
+2. Add your NEXT_PUBLIC_PRIVY_API_KEY
+3. Restart the development server
+
+Get your API key at: https://dashboard.privy.io`;
 
 // Component that uses Privy when configured
 function HomeWithPrivy() {
@@ -9,7 +19,7 @@ function HomeWithPrivy() {
 // Component for when Privy is not configured
 function HomeWithoutPrivy() {
   const login = () => {
-    alert('⚠️ Authentication not configured!\n\nPlease set up your Privy API key:\n1. Copy .env.example to .env\n2. Add your NEXT_PUBLIC_PRIVY_API_KEY\n3. Restart the development server\n\nGet your API key at: https://dashboard.privy.io');
+    alert(CONFIG_INSTRUCTIONS);
   };
   return <HomeContent ready={true} authenticated={false} user={null} login={login} logout={() => {}} />;
 }
@@ -28,7 +38,7 @@ export default function Home() {
 function HomeContent({ ready, authenticated, user, login, logout }: {
   ready: boolean;
   authenticated: boolean;
-  user: any;
+  user: User | null;
   login: () => void;
   logout: () => void;
 }) {
@@ -74,16 +84,9 @@ function HomeContent({ ready, authenticated, user, login, logout }: {
 
       {/* Configuration Warning Banner */}
       {!isPrivyConfigured && (
-        <div style={{
-          backgroundColor: '#fef3c7',
-          color: '#92400e',
-          padding: '16px',
-          textAlign: 'center',
-          borderBottom: '2px solid #f59e0b',
-          fontWeight: '500'
-        }}>
+        <div className="config-warning-banner">
           ⚠️ <strong>Configuration Required:</strong> Please set up your Privy API key in the .env file. 
-          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer" style={{color: '#92400e', textDecoration: 'underline'}}>Privy Dashboard</a> to get your credentials.
+          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> to get your credentials.
         </div>
       )}
 
