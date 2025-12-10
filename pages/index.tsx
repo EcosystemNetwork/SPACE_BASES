@@ -1,49 +1,7 @@
-import { useEffect, useState } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 
 export default function Home() {
-  const [loaded, setLoaded] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const pubKey = process.env.NEXT_PUBLIC_PRIVY_API_KEY;
-
-  useEffect(() => {
-    // Dynamically load the Privy widget script at runtime
-    const id = 'privy-widget-script';
-    if (!document.getElementById(id)) {
-      const s = document.createElement('script');
-      s.src = 'https://cdn.privy.io/widget.js';
-      s.id = id;
-      s.async = true;
-      s.onload = () => {
-        console.log('Privy widget script loaded (if available).');
-        setLoaded(true);
-      };
-      s.onerror = () => {
-        console.warn('Could not load Privy widget script — verify CDN URL in docs.');
-        setLoaded(true);
-      };
-      document.body.appendChild(s);
-    } else {
-      setLoaded(true);
-    }
-  }, []);
-
-  async function handleLoginWithPrivy() {
-    try {
-      const privy = (window as any).privy;
-      if (privy && typeof privy.open === 'function') {
-        privy.open({ apiKey: pubKey });
-      } else {
-        alert('Privy widget not available. Check that the script URL and Privy docs are up-to-date.');
-      }
-    } catch (err) {
-      console.error('Privy login error:', err);
-      alert('Could not open Privy login. See console for details.');
-    }
-  }
-
-  async function handleLogout() {
-    setUser(null);
-  }
+  const { ready, authenticated, user, login, logout } = usePrivy();
 
   return (
     <div className="page-wrapper">
@@ -63,17 +21,17 @@ export default function Home() {
               </div>
             </div>
             <div className="header-actions">
-              {user ? (
+              {authenticated && user ? (
                 <>
                   <span className="user-info">
-                    👤 {user.email || user.id || 'user'}
+                    👤 {user.email?.address || user.id || 'user'}
                   </span>
-                  <button className="btn btn-secondary" onClick={handleLogout}>
+                  <button className="btn btn-secondary" onClick={logout}>
                     Logout
                   </button>
                 </>
               ) : (
-                <button className="btn btn-primary" onClick={handleLoginWithPrivy}>
+                <button className="btn btn-primary" onClick={login} disabled={!ready}>
                   <span>🔐</span>
                   Connect with Privy
                 </button>
@@ -100,7 +58,7 @@ export default function Home() {
               limitless possibilities powered by blockchain technology.
             </p>
             <div className="hero-actions">
-              <button className="btn btn-large btn-primary" onClick={handleLoginWithPrivy}>
+              <button className="btn btn-large btn-primary" onClick={login} disabled={!ready}>
                 <span>🚀</span>
                 Get Started
               </button>
@@ -184,7 +142,7 @@ export default function Home() {
                 Join thousands of users already exploring the quantum economy.
                 Get started in seconds with Privy authentication.
               </p>
-              <button className="btn btn-large btn-primary" onClick={handleLoginWithPrivy}>
+              <button className="btn btn-large btn-primary" onClick={login} disabled={!ready}>
                 <span>🚀</span>
                 Connect Your Wallet
               </button>
