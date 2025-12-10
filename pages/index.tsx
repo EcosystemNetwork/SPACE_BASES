@@ -35,7 +35,7 @@ function HomeWithoutPrivy() {
 
 // Shared UI component
 function HomeContent({ ready, authenticated, user, login, logout }: HomeContentProps) {
-  const isPrivyConfigured = !!process.env.NEXT_PUBLIC_PRIVY_API_KEY;
+  const privyConfigured = isPrivyConfigured();
 
   return (
     <div className="page-wrapper">
@@ -76,7 +76,7 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
       </header>
 
       {/* Configuration Warning Banner */}
-      {!isPrivyConfigured && (
+      {!privyConfigured && (
         <div className="config-warning-banner">
           ⚠️ <strong>Configuration Required:</strong> Please set up your Privy API key in the .env file. 
           See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> to get your credentials.
