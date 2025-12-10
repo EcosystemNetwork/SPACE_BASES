@@ -1,4 +1,15 @@
 import { usePrivy, User } from '@privy-io/react-auth';
+import { isPrivyConfigured } from '../lib/privy-config';
+
+interface HomeContentProps {
+  ready: boolean;
+  authenticated: boolean;
+  user: User | null;
+  login: () => void;
+  logout: () => void;
+}
+
+// Component that uses Privy hooks
 
 // Configuration instructions constant
 const CONFIG_INSTRUCTIONS = `⚠️ Authentication not configured!
@@ -16,6 +27,13 @@ function HomeWithPrivy() {
   return <HomeContent ready={ready} authenticated={authenticated} user={user} login={login} logout={logout} />;
 }
 
+// Component without Privy hooks
+function HomeWithoutPrivy() {
+  return <HomeContent ready={false} authenticated={false} user={null} login={() => {}} logout={() => {}} />;
+}
+
+// Main content component
+function HomeContent({ ready, authenticated, user, login, logout }: HomeContentProps) {
 // Component for when Privy is not configured
 function HomeWithoutPrivy() {
   const login = () => {
@@ -241,4 +259,9 @@ function HomeContent({ ready, authenticated, user, login, logout }: {
       </footer>
     </div>
   );
+}
+
+// Export the appropriate component based on Privy configuration
+export default function Home() {
+  return isPrivyConfigured() ? <HomeWithPrivy /> : <HomeWithoutPrivy />;
 }
