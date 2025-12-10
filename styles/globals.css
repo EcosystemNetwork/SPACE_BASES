@@ -588,4 +588,15 @@ html {
   to {
     transform: translateY(0);
   }
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 16px;
+  text-align: center;
+  border-bottom: 2px solid #f59e0b;
+  font-weight: 500;
+}
+
+.config-warning-banner a {
+  color: #92400e;
+  text-decoration: underline;
 }
