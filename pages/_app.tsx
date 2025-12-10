@@ -15,9 +15,16 @@ export default function App({ Component, pageProps }: AppProps) {
     return <Component {...pageProps} />;
   }
 
+  const privyAppId = process.env.NEXT_PUBLIC_PRIVY_API_KEY;
+
+  // If Privy API key is not configured, render the app without Privy provider
+  if (!privyAppId) {
+    return <Component {...pageProps} />;
+  }
+
   return (
     <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_API_KEY || ''}
+      appId={privyAppId}
       config={{
         // Customize Privy appearance and behavior
         appearance: {

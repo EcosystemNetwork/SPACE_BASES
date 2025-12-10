@@ -1,7 +1,38 @@
 import { usePrivy } from '@privy-io/react-auth';
 
-export default function Home() {
+// Component that uses Privy when configured
+function HomeWithPrivy() {
   const { ready, authenticated, user, login, logout } = usePrivy();
+  return <HomeContent ready={ready} authenticated={authenticated} user={user} login={login} logout={logout} />;
+}
+
+// Component for when Privy is not configured
+function HomeWithoutPrivy() {
+  const login = () => {
+    alert('⚠️ Authentication not configured!\n\nPlease set up your Privy API key:\n1. Copy .env.example to .env\n2. Add your NEXT_PUBLIC_PRIVY_API_KEY\n3. Restart the development server\n\nGet your API key at: https://dashboard.privy.io');
+  };
+  return <HomeContent ready={true} authenticated={false} user={null} login={login} logout={() => {}} />;
+}
+
+// Main component that checks configuration
+export default function Home() {
+  const isPrivyConfigured = !!process.env.NEXT_PUBLIC_PRIVY_API_KEY;
+  
+  if (isPrivyConfigured) {
+    return <HomeWithPrivy />;
+  }
+  return <HomeWithoutPrivy />;
+}
+
+// Shared UI component
+function HomeContent({ ready, authenticated, user, login, logout }: {
+  ready: boolean;
+  authenticated: boolean;
+  user: any;
+  login: () => void;
+  logout: () => void;
+}) {
+  const isPrivyConfigured = !!process.env.NEXT_PUBLIC_PRIVY_API_KEY;
 
   return (
     <div className="page-wrapper">
@@ -40,6 +71,21 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Configuration Warning Banner */}
+      {!isPrivyConfigured && (
+        <div style={{
+          backgroundColor: '#fef3c7',
+          color: '#92400e',
+          padding: '16px',
+          textAlign: 'center',
+          borderBottom: '2px solid #f59e0b',
+          fontWeight: '500'
+        }}>
+          ⚠️ <strong>Configuration Required:</strong> Please set up your Privy API key in the .env file. 
+          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer" style={{color: '#92400e', textDecoration: 'underline'}}>Privy Dashboard</a> to get your credentials.
+        </div>
+      )}
 
       <main className="main">
         <div className="container">
