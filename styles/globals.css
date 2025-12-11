@@ -564,6 +564,7 @@ html {
   z-index: 9999;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: slideDown 0.3s ease-out;
+  pointer-events: none;
 }
 
 .config-warning-banner strong {
@@ -575,6 +576,7 @@ html {
   color: white;
   text-decoration: underline;
   font-weight: 600;
+  pointer-events: auto;
 }
 
 .config-warning-banner a:hover {

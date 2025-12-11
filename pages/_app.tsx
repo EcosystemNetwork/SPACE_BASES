@@ -16,18 +16,9 @@ export default function App({ Component, pageProps }: AppProps) {
     return <Component {...pageProps} />;
   }
 
-  // If Privy is not configured, show warning banner
+  // If Privy is not configured, render without provider
   if (!isPrivyConfigured()) {
-    return (
-      <>
-        <div className="config-warning-banner">
-          <strong>⚠️ Configuration Required:</strong>
-          Please set NEXT_PUBLIC_PRIVY_API_KEY in your .env file. 
-          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> to get your API key.
-        </div>
-        <Component {...pageProps} />
-      </>
-    );
+    return <Component {...pageProps} />;
   }
 
   // Render app with Privy provider when configured
