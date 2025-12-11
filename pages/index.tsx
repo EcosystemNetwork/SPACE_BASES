@@ -12,12 +12,15 @@ interface HomeContentProps {
 // Configuration instructions constant
 const CONFIG_INSTRUCTIONS = `⚠️ Authentication not configured!
 
-Please set up your Privy API key:
+Quick Setup:
 1. Copy .env.example to .env
-2. Add your NEXT_PUBLIC_PRIVY_API_KEY
-3. Restart the development server
+2. Add your NEXT_PUBLIC_PRIVY_API_KEY (Privy App ID)
+3. Add your PRIVY_APP_SECRET
+4. Restart the development server
 
-Get your API key at: https://dashboard.privy.io`;
+Get credentials: https://dashboard.privy.io
+Setup guide: docs/PRIVY_SETUP.md
+Official docs: https://docs.privy.io/basics/react/setup`;
 
 // Component that uses Privy hooks when configured
 function HomeWithPrivy() {
@@ -79,7 +82,8 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
       {!privyConfigured && (
         <div className="config-warning-banner">
           ⚠️ <strong>Configuration Required:</strong> Please set up your Privy API key in the .env file. 
-          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> to get your credentials.
+          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> for credentials and{' '}
+          <a href="https://docs.privy.io/basics/react/setup" target="_blank" rel="noopener noreferrer">official setup guide</a>.
         </div>
       )}
 

@@ -1,3 +1,20 @@
+/**
+ * Main App Component for SPACE_BASES
+ * 
+ * This component wraps the entire application with PrivyProvider for authentication.
+ * 
+ * Privy Setup:
+ * - Requires NEXT_PUBLIC_PRIVY_API_KEY environment variable
+ * - Optional PRIVY_APP_SECRET for server-side verification
+ * - See docs/PRIVY_SETUP.md for detailed setup instructions
+ * - Official guide: https://docs.privy.io/basics/react/setup
+ * 
+ * For Vercel deployment:
+ * - Set environment variables in Vercel Dashboard
+ * - Configure allowed origins in Privy Dashboard
+ * - See docs/PRIVY_SETUP.md for deployment instructions
+ */
+
 import type { AppProps } from 'next/app';
 import { PrivyProvider } from '@privy-io/react-auth';
 import '../styles/globals.css';

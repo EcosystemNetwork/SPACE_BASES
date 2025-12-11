@@ -113,20 +113,25 @@ Create a `.env` file in the root directory with the following variables:
 
 | Variable | Description | Required | Public |
 |----------|-------------|----------|--------|
-| `NEXT_PUBLIC_PRIVY_API_KEY` | Your Privy public API key | ✅ | Yes |
+| `NEXT_PUBLIC_PRIVY_API_KEY` | Your Privy App ID (starts with 'clp') | ✅ | Yes |
 | `PRIVY_APP_SECRET` | Your Privy app secret for server-side verification | ✅ | No |
 
 ⚠️ **Important**: 
 - Never commit the `.env` file to version control
 - `NEXT_PUBLIC_*` variables are exposed to the browser
 - `PRIVY_APP_SECRET` must be kept secure (server-side only)
+- **For Vercel deployment**: Environment variables must be configured in Vercel Dashboard (see below)
 
 ### Getting Privy Credentials
 
 1. Visit [Privy Dashboard](https://dashboard.privy.io)
 2. Create a new app or select an existing one
-3. Copy your API Key (for `NEXT_PUBLIC_PRIVY_API_KEY`)
-4. Copy your App Secret (for `PRIVY_APP_SECRET`)
+3. Go to Settings → Copy your **App ID** (for `NEXT_PUBLIC_PRIVY_API_KEY`)
+4. Copy your **App Secret** (for `PRIVY_APP_SECRET`)
+
+📖 **For detailed setup instructions**, including Vercel configuration, see [**docs/PRIVY_SETUP.md**](docs/PRIVY_SETUP.md)
+
+🔗 **Official Privy Documentation**: https://docs.privy.io/basics/react/setup
 
 ## 🚢 Deployment
 
@@ -148,13 +153,17 @@ Create a `.env` file in the root directory with the following variables:
    vercel
    ```
 
-3. **Configure Environment Variables**
+3. **Configure Environment Variables in Vercel**
    
-   In your Vercel project dashboard:
-   - Go to Settings → Environment Variables
-   - Add `NEXT_PUBLIC_PRIVY_API_KEY`
-   - Add `PRIVY_APP_SECRET`
-   - Redeploy the project
+   **CRITICAL**: Environment variables must be set in Vercel Dashboard:
+   - Go to Project Settings → Environment Variables
+   - Add `NEXT_PUBLIC_PRIVY_API_KEY` (your Privy App ID starting with 'clp')
+   - Add `PRIVY_APP_SECRET` (your Privy App Secret)
+   - Select all environments (Production, Preview, Development)
+   - Click Save for each variable
+   - **Redeploy the project** for changes to take effect
+   
+   📖 **See [docs/PRIVY_SETUP.md](docs/PRIVY_SETUP.md) for detailed Vercel setup instructions**
 
 ### Deploy to Other Platforms
 

@@ -42,24 +42,55 @@ vercel
 
 ### Get Privy Credentials
 
+Follow the official Privy documentation: https://docs.privy.io/basics/react/setup
+
 1. Go to [Privy Dashboard](https://dashboard.privy.io)
 2. Create a new app or select existing
-3. Navigate to Settings → API Keys
+3. Navigate to **Settings**
 4. Copy:
-   - **App ID** → Use as `NEXT_PUBLIC_PRIVY_API_KEY`
+   - **App ID** (starts with 'clp') → Use as `NEXT_PUBLIC_PRIVY_API_KEY`
    - **App Secret** → Use as `PRIVY_APP_SECRET`
 
-### Configure Environment Variables
+### Configure Environment Variables in Vercel
 
-In Vercel Dashboard:
-1. Go to Project Settings
-2. Navigate to "Environment Variables"
-3. Add both variables:
-   ```
-   NEXT_PUBLIC_PRIVY_API_KEY=your_app_id_here
-   PRIVY_APP_SECRET=your_app_secret_here
-   ```
-4. Save and redeploy
+**IMPORTANT**: All environment variables MUST be configured in Vercel Dashboard for deployment to work.
+
+#### Step-by-Step Instructions:
+
+1. **Access Vercel Dashboard:**
+   - Go to your project on Vercel
+   - Click **Settings** in the top navigation
+   - Select **Environment Variables** from the sidebar
+
+2. **Add NEXT_PUBLIC_PRIVY_API_KEY:**
+   - Click "Add New" button
+   - Name: `NEXT_PUBLIC_PRIVY_API_KEY`
+   - Value: Your Privy App ID (format: `clp-xxxxxxxxxxxxx`)
+   - Environments: Check **Production**, **Preview**, and **Development**
+   - Click **Save**
+
+3. **Add PRIVY_APP_SECRET:**
+   - Click "Add New" button again
+   - Name: `PRIVY_APP_SECRET`
+   - Value: Your Privy App Secret
+   - Environments: Check **Production**, **Preview**, and **Development**
+   - ⚠️ Mark as **Sensitive** (Vercel will encrypt it)
+   - Click **Save**
+
+4. **Redeploy Your Project:**
+   - Go to **Deployments** tab
+   - Find your latest deployment
+   - Click the **⋯** (three dots) menu
+   - Select **Redeploy**
+   - Confirm the redeploy
+
+⚠️ **Critical Notes:**
+- Changes to `NEXT_PUBLIC_*` variables require a rebuild/redeploy
+- Server-side variables (`PRIVY_APP_SECRET`) take effect immediately but redeploy is recommended
+- Variables must be set for each environment you want to use (Production, Preview, Development)
+
+📖 **For comprehensive setup instructions, troubleshooting, and security best practices, see:**
+[**docs/PRIVY_SETUP.md**](../docs/PRIVY_SETUP.md)
 
 ## Post-Deployment
 
@@ -77,13 +108,31 @@ In Vercel Dashboard:
 3. Configure DNS records as instructed
 4. SSL certificate auto-generated
 
-### Update Privy Configuration
+### Update Privy Configuration for Your Domain
 
-1. In Privy Dashboard → Settings
-2. Add your Vercel URL to allowed origins:
-   - `https://your-project.vercel.app`
-   - Your custom domain if configured
-3. Save changes
+**REQUIRED**: Configure Privy to allow requests from your Vercel domain.
+
+1. **Access Privy Dashboard:**
+   - Go to [Privy Dashboard](https://dashboard.privy.io)
+   - Select your app
+   - Navigate to **Settings**
+
+2. **Add Allowed Origins:**
+   - Find the **Allowed Origins** section
+   - Add your Vercel deployment URLs:
+     - `https://your-project.vercel.app` (your main Vercel URL)
+     - `https://*.vercel.app` (to allow all preview deployments)
+     - `https://yourdomain.com` (if using custom domain)
+   - Click **Save**
+
+3. **Configure Redirect URIs (if needed):**
+   - In the same Settings page, find **Redirect URIs**
+   - Add: `https://your-project.vercel.app/api/auth/callback`
+   - This is used for OAuth authentication flows
+
+⚠️ **Important**: Without adding your Vercel URLs to Privy's allowed origins, authentication will fail with CORS errors.
+
+📖 **For detailed configuration instructions, see:** [docs/PRIVY_SETUP.md](../docs/PRIVY_SETUP.md#step-3-configure-privy-dashboard-for-your-vercel-domain)
 
 ## Monitoring
 

@@ -1,17 +1,33 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 /**
- * Server-side scaffold to verify a Privy session token / webhook.
+ * Server-side API route to verify Privy authentication tokens
  *
- * IMPORTANT:
- * - Do NOT commit your PRIVY_APP_SECRET. Put it in an environment variable (PRIVY_APP_SECRET).
- * - Replace the example endpoint and verification logic below with Privy's official verification API or SDK.
- * - Example flow:
- *   1. Client completes Privy hosted widget flow and receives a session token (or Privy sends a webhook to your server).
- *   2. Client posts the token to this endpoint.
- *   3. Server calls Privy's verification API with your PRIVY_APP_SECRET to validate the token and fetch user info.
+ * This endpoint handles server-side verification of Privy session tokens using
+ * the PRIVY_APP_SECRET environment variable.
  *
- * See: https://docs.privy.io/welcome (use the official SDK or REST API)
+ * ENVIRONMENT VARIABLES REQUIRED:
+ * - PRIVY_APP_SECRET: Your Privy App Secret (server-side only, never exposed to client)
+ * 
+ * SETUP INSTRUCTIONS:
+ * - For local development: Set PRIVY_APP_SECRET in .env file
+ * - For Vercel deployment: Set PRIVY_APP_SECRET in Vercel Dashboard → Environment Variables
+ * - See docs/PRIVY_SETUP.md for comprehensive setup instructions
+ * - Official Privy docs: https://docs.privy.io/basics/react/setup
+ *
+ * AUTHENTICATION FLOW:
+ * 1. Client completes Privy authentication and receives a session token
+ * 2. Client sends token to this endpoint via POST request
+ * 3. Server verifies token with Privy API using PRIVY_APP_SECRET
+ * 4. Server returns user information or error
+ *
+ * SECURITY NOTES:
+ * ⚠️ Never commit PRIVY_APP_SECRET to version control
+ * ⚠️ This secret must remain server-side only
+ * ⚠️ Rotate secrets regularly in production
+ *
+ * @see https://docs.privy.io/reference - Privy API Reference
+ * @see docs/PRIVY_SETUP.md - SPACE_BASES Privy setup guide
  */
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
