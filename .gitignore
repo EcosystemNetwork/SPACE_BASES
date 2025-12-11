@@ -9,3 +9,7 @@
 .env.production.local
 /.vercel
 .DS_Store
+
+# Version backup files
+*_Version*
+*Version*.md
