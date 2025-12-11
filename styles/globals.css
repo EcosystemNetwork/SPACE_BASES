@@ -564,6 +564,7 @@ html {
   z-index: 9999;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: slideDown 0.3s ease-out;
+  pointer-events: none;
 }
 
 .config-warning-banner strong {
@@ -575,6 +576,7 @@ html {
   color: white;
   text-decoration: underline;
   font-weight: 600;
+  pointer-events: auto;
 }
 
 .config-warning-banner a:hover {
@@ -588,15 +590,4 @@ html {
   to {
     transform: translateY(0);
   }
-  background-color: #fef3c7;
-  color: #92400e;
-  padding: 16px;
-  text-align: center;
-  border-bottom: 2px solid #f59e0b;
-  font-weight: 500;
-}
-
-.config-warning-banner a {
-  color: #92400e;
-  text-decoration: underline;
 }
