@@ -49,9 +49,17 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
   // Determine the connection button text
   const getConnectionButtonText = () => {
     if (mockAuthEnabled) {
-      return '🔓 Connect (Mock Mode)';
+      return 'Connect (Mock Mode)';
     }
-    return '🔐 Connect with Privy';
+    return 'Connect with Privy';
+  };
+
+  // Determine the connection button icon
+  const getConnectionButtonIcon = () => {
+    if (mockAuthEnabled) {
+      return '🔓';
+    }
+    return '🔐';
   };
 
   return (
@@ -83,7 +91,7 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                 </>
               ) : (
                 <button className="btn btn-primary" onClick={login} disabled={!ready}>
-                  <span>🔐</span>
+                  <span>{getConnectionButtonIcon()}</span>
                   {getConnectionButtonText()}
                 </button>
               )}

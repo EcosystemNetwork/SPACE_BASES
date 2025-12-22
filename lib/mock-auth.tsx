@@ -48,7 +48,7 @@ export function MockAuthProvider({ children }: MockAuthProviderProps) {
     const mockUser: MockUser = {
       id: 'mock-user-123',
       email: {
-        address: 'developer@space-bases.dev',
+        address: 'developer@example.com',
       },
       wallet: {
         address: '0x1234567890abcdef1234567890abcdef12345678',
