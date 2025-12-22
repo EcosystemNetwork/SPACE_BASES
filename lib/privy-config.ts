@@ -11,3 +11,17 @@ export function isPrivyConfigured(): boolean {
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_API_KEY;
   return !!(privyAppId && privyAppId.trim() !== '' && privyAppId.startsWith('clp'));
 }
+
+/**
+ * Check if mock authentication mode is enabled
+ * 
+ * When enabled, the app uses mock authentication instead of real Privy integration.
+ * This allows development without requiring valid Privy credentials.
+ * 
+ * Set NEXT_PUBLIC_MOCK_AUTH=true in .env to enable mock mode.
+ * 
+ * @returns true if mock authentication is enabled
+ */
+export function isMockAuthEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
+}

@@ -113,15 +113,32 @@ Create a `.env` file in the root directory with the following variables:
 
 | Variable | Description | Required | Public |
 |----------|-------------|----------|--------|
-| `NEXT_PUBLIC_PRIVY_API_KEY` | Your Privy public API key | ✅ | Yes |
-| `PRIVY_APP_SECRET` | Your Privy app secret for server-side verification | ✅ | No |
+| `NEXT_PUBLIC_PRIVY_API_KEY` | Your Privy public API key | ✅ (unless using mock mode) | Yes |
+| `PRIVY_APP_SECRET` | Your Privy app secret for server-side verification | ✅ (unless using mock mode) | No |
+| `NEXT_PUBLIC_MOCK_AUTH` | Enable mock authentication mode (set to 'true') | ❌ | Yes |
 
 ⚠️ **Important**: 
 - Never commit the `.env` file to version control
 - `NEXT_PUBLIC_*` variables are exposed to the browser
 - `PRIVY_APP_SECRET` must be kept secure (server-side only)
 
-### Getting Privy Credentials
+### Mock Authentication Mode (Development)
+
+For development without requiring real wallet connections, you can enable mock authentication:
+
+1. Create a `.env` file with:
+   ```env
+   NEXT_PUBLIC_MOCK_AUTH=true
+   ```
+
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+3. The app will use mock authentication with a test user account, allowing you to develop and test app flows without connecting to Privy or real wallets.
+
+### Getting Privy Credentials (Production)
 
 1. Visit [Privy Dashboard](https://dashboard.privy.io)
 2. Create a new app or select an existing one
