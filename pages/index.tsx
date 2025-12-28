@@ -1,65 +1,23 @@
-import { usePrivy, User } from '@privy-io/react-auth';
-import { isPrivyConfigured, isMockAuthEnabled } from '../lib/privy-config';
 import { useMockAuth, MockUser } from '../lib/mock-auth';
-import { useEffect, useState } from 'react';
 
 interface HomeContentProps {
   ready: boolean;
   authenticated: boolean;
-  user: User | MockUser | null;
+  user: MockUser | null;
   login: () => void;
   logout: () => void;
 }
 
-// Configuration instructions constant
-const CONFIG_INSTRUCTIONS = `⚠️ Authentication not configured!
-
-Please set up your Privy API key:
-1. Copy .env.example to .env
-2. Add your NEXT_PUBLIC_PRIVY_API_KEY
-3. Restart the development server
-
-Get your API key at: https://dashboard.privy.io`;
-
-// Component that uses Privy hooks when configured
-function HomeWithPrivy() {
-  const { ready, authenticated, user, login, logout } = usePrivy();
-  return <HomeContent ready={ready} authenticated={authenticated} user={user} login={login} logout={logout} />;
-}
-
-// Component that uses mock authentication
-function HomeWithMockAuth() {
-  const { ready, authenticated, user, login, logout } = useMockAuth();
-  return <HomeContent ready={ready} authenticated={authenticated} user={user} login={login} logout={logout} />;
-}
-
-// Component for when Privy is not configured
-function HomeWithoutPrivy() {
-  const login = () => {
-    alert(CONFIG_INSTRUCTIONS);
-  };
-  return <HomeContent ready={true} authenticated={false} user={null} login={login} logout={() => {}} />;
-}
-
 // Shared UI component
 function HomeContent({ ready, authenticated, user, login, logout }: HomeContentProps) {
-  const privyConfigured = isPrivyConfigured();
-  const mockAuthEnabled = isMockAuthEnabled();
-
   // Determine the connection button text
   const getConnectionButtonText = () => {
-    if (mockAuthEnabled) {
-      return 'Connect (Mock Mode)';
-    }
-    return 'Connect with Privy';
+    return 'Connect Wallet (Mock)';
   };
 
   // Determine the connection button icon
   const getConnectionButtonIcon = () => {
-    if (mockAuthEnabled) {
-      return '🔓';
-    }
-    return '🔐';
+    return '🧪';
   };
 
   return (
@@ -100,21 +58,6 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
         </div>
       </header>
 
-      {/* Configuration Warning Banner */}
-      {!privyConfigured && !mockAuthEnabled && (
-        <div className="config-warning-banner">
-          ⚠️ <strong>Configuration Required:</strong> Please set up your Privy API key in the .env file. 
-          See <a href="https://dashboard.privy.io" target="_blank" rel="noopener noreferrer">Privy Dashboard</a> to get your credentials.
-        </div>
-      )}
-
-      {/* Mock Mode Banner */}
-      {mockAuthEnabled && (
-        <div className="config-warning-banner" style={{ background: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
-          🔓 <strong>Mock Mode Active:</strong> Using mock authentication for development. Real wallet connections are disabled.
-        </div>
-      )}
-
       <main className="main">
         <div className="container">
           {/* Hero Section */}
@@ -128,8 +71,8 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
               <span className="gradient-text"> Quantum Economy</span>
             </h1>
             <p className="hero-description">
-              Experience next-generation DeFi on Mantle. Secure authentication powered by Privy,
-              limitless possibilities powered by blockchain technology.
+              Experience next-generation DeFi on Mantle. Wallet connections are mocked for now so you
+              can rapidly prototype product flows without waiting on real integrations.
             </p>
             <div className="hero-actions">
               <button className="btn btn-large btn-primary" onClick={login} disabled={!ready}>
@@ -156,8 +99,8 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                 <div className="feature-icon">🔒</div>
                 <h3 className="feature-title">Secure Authentication</h3>
                 <p className="feature-description">
-                  Privy-powered login ensures your identity and assets are always protected
-                  with enterprise-grade security.
+                  Mock wallet login keeps flows moving during prototyping while we finalize the
+                  production-grade integration.
                 </p>
               </div>
 
@@ -214,7 +157,7 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
               <h2 className="cta-title">Ready to Launch?</h2>
               <p className="cta-description">
                 Join thousands of users already exploring the quantum economy.
-                Get started in seconds with Privy authentication.
+                Wallet connections are mocked here so you can validate flows quickly.
               </p>
               <button className="btn btn-large btn-primary" onClick={login} disabled={!ready}>
                 <span>🚀</span>
@@ -268,23 +211,16 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
   );
 }
 
-// Main component that checks configuration
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
+  const { ready, authenticated, user, login, logout } = useMockAuth();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Don't render during SSR
-  if (!mounted) {
-    return <HomeWithoutPrivy />;
-  }
-
-  // Use mock authentication if enabled
-  if (isMockAuthEnabled()) {
-    return <HomeWithMockAuth />;
-  }
-  // Otherwise use Privy or no authentication
-  return isPrivyConfigured() ? <HomeWithPrivy /> : <HomeWithoutPrivy />;
+  return (
+    <HomeContent
+      ready={ready}
+      authenticated={authenticated}
+      user={user}
+      login={login}
+      logout={logout}
+    />
+  );
 }

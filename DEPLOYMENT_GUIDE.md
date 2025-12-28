@@ -6,9 +6,7 @@
 
 1. Click the "Deploy with Vercel" button in the README
 2. Vercel will fork the repo and start deployment
-3. Add environment variables:
-   - `NEXT_PUBLIC_PRIVY_API_KEY` - Your Privy public API key
-   - `PRIVY_APP_SECRET` - Your Privy app secret
+3. No environment variables are required for the mock wallet prototype
 4. Click "Deploy"
 5. Your site will be live at `https://your-project.vercel.app`
 
@@ -35,40 +33,19 @@ vercel
 3. Click "New Project"
 4. Import your GitHub repository
 5. Vercel auto-detects Next.js configuration
-6. Add environment variables in project settings
-7. Deploy!
+6. Deploy!
 
 ## Environment Setup
 
-### Get Privy Credentials
-
-1. Go to [Privy Dashboard](https://dashboard.privy.io)
-2. Create a new app or select existing
-3. Navigate to Settings → API Keys
-4. Copy:
-   - **App ID** → Use as `NEXT_PUBLIC_PRIVY_API_KEY`
-   - **App Secret** → Use as `PRIVY_APP_SECRET`
-
-### Configure Environment Variables
-
-In Vercel Dashboard:
-1. Go to Project Settings
-2. Navigate to "Environment Variables"
-3. Add both variables:
-   ```
-   NEXT_PUBLIC_PRIVY_API_KEY=your_app_id_here
-   PRIVY_APP_SECRET=your_app_secret_here
-   ```
-4. Save and redeploy
+No environment variables are needed while wallet authentication is mocked. Add credentials later when connecting to a real provider.
 
 ## Post-Deployment
 
 ### Verify Deployment
 
 1. Visit your Vercel URL
-2. Check that landing page loads with animations
-3. Click "Connect with Privy" button
-4. Verify Privy widget attempts to load (may need valid API key)
+2. Check that the landing page loads with animations
+3. Click the "Connect Wallet (Mock)" button to confirm the mock flow works
 
 ### Custom Domain (Optional)
 
@@ -76,14 +53,6 @@ In Vercel Dashboard:
 2. Add your custom domain
 3. Configure DNS records as instructed
 4. SSL certificate auto-generated
-
-### Update Privy Configuration
-
-1. In Privy Dashboard → Settings
-2. Add your Vercel URL to allowed origins:
-   - `https://your-project.vercel.app`
-   - Your custom domain if configured
-3. Save changes
 
 ## Monitoring
 
@@ -113,29 +82,21 @@ vercel logs --follow
 
 ### Environment Variables Not Working
 
-- Ensure `NEXT_PUBLIC_*` prefix for client-side vars
-- Redeploy after adding env vars
+- None are required for the mock flow; add them only after introducing real integrations
+- Redeploy after adding any new env vars
 - Clear build cache if issues persist
-
-### Privy Not Loading
-
-- Verify API key is correct
-- Check Privy dashboard for allowed origins
-- Inspect browser console for errors
 
 ## Next Steps
 
 1. ✅ Deploy to Vercel
-2. ✅ Configure environment variables
-3. ✅ Test Privy authentication
-4. ✅ Add custom domain
-5. 📋 Begin GameFi smart contract development (see `docs/GAMEFI_ARCHITECTURE.md`)
+2. ✅ Confirm mock wallet login flow works
+3. 📋 Integrate your chosen production wallet/auth provider when ready
+4. 📋 Begin GameFi smart contract development (see `docs/GAMEFI_ARCHITECTURE.md`)
 
 ## Support
 
 - Vercel Docs: https://vercel.com/docs
 - Next.js Docs: https://nextjs.org/docs
-- Privy Docs: https://docs.privy.io
 - Project README: See README.md for detailed setup
 
 ---
