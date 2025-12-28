@@ -1,13 +1,13 @@
 /**
  * Mock Authentication Context
  * 
- * This provides a mock implementation of Privy authentication hooks
+ * This provides a mock implementation of wallet authentication hooks
  * to allow app flow development without requiring real wallet connections.
  */
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// Mock User type matching Privy's User interface
+// Mock User type resembling a wallet user record
 export interface MockUser {
   id: string;
   email?: {
@@ -18,7 +18,7 @@ export interface MockUser {
   };
 }
 
-// Mock authentication context type matching Privy's interface
+// Mock authentication context type matching the auth interface expected in the app
 interface MockAuthContextType {
   ready: boolean;
   authenticated: boolean;
@@ -37,7 +37,7 @@ interface MockAuthProviderProps {
  * Mock Authentication Provider
  * 
  * Provides mock authentication state and methods for development.
- * Simulates Privy's authentication flow without requiring real credentials.
+ * Simulates an authentication flow without requiring real credentials.
  */
 export function MockAuthProvider({ children }: MockAuthProviderProps) {
   const [authenticated, setAuthenticated] = useState(false);
@@ -83,7 +83,7 @@ export function MockAuthProvider({ children }: MockAuthProviderProps) {
 /**
  * Hook to access mock authentication context
  * 
- * Mimics the usePrivy() hook interface for drop-in replacement
+ * Mimics a wallet auth hook interface for drop-in replacement
  */
 export function useMockAuth(): MockAuthContextType {
   const context = useContext(MockAuthContext);
