@@ -434,7 +434,7 @@ function SpaceBaseDisplay({
           if (obj.geometry && typeof obj.geometry.dispose === 'function') obj.geometry.dispose();
           if (obj.material) {
             if (Array.isArray(obj.material)) {
-              obj.material.forEach((mat) => mat.dispose?.());
+              obj.material.forEach((mat: any) => mat.dispose?.());
             } else if (typeof obj.material.dispose === 'function') {
               obj.material.dispose();
             }
