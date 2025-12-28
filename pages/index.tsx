@@ -1,4 +1,3 @@
-import React from 'react';
 import { useMockAuth, MockUser } from '../lib/mock-auth';
 
 interface HomeContentProps {

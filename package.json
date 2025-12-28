@@ -17,7 +17,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "verify-react": "node -e \"console.log('React version:', require('react').version); console.log('ReactDOM version:', require('react-dom').version); console.log('✅ React is properly installed and configured')\""
+    "verify-react": "node scripts/verify-react.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",
