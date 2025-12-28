@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMockAuth, MockUser } from '../lib/mock-auth';
 
 type ResourceKey = 'energy' | 'alloys' | 'credits' | 'research' | 'crew';
@@ -43,6 +43,39 @@ interface MissionLogEntry {
   message: string;
   tone: 'success' | 'warning' | 'info';
 }
+
+let threePromise: Promise<any> | null = null;
+
+const loadThree = () => {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if ((window as any).THREE) return Promise.resolve((window as any).THREE);
+  if (threePromise) return threePromise;
+
+  threePromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-threejs]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve((window as any).THREE));
+      existing.addEventListener('error', () => {
+        threePromise = null;
+        reject(new Error('Three.js failed to load'));
+      });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js';
+    script.async = true;
+    script.dataset.threejs = 'true';
+    script.onload = () => resolve((window as any).THREE);
+    script.onerror = () => {
+      threePromise = null;
+      reject(new Error('Three.js failed to load'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return threePromise;
+};
 
 const BASE_CAPACITY: ResourceState = {
   energy: 1200,
@@ -177,6 +210,363 @@ interface HomeContentProps {
   user: MockUser | null;
   login: () => void;
   logout: () => void;
+}
+
+interface SpaceBaseDisplayProps {
+  baseIntegrity: number;
+  modules: ActiveModule[];
+  projects: Project[];
+  resources: ResourceState;
+  capacity: ResourceState;
+  resourceRates: Record<ResourceKey, number>;
+  onSupply: () => void;
+  onScan: () => void;
+}
+
+function SpaceBaseDisplay({
+  baseIntegrity,
+  modules,
+  projects,
+  resources,
+  capacity,
+  resourceRates,
+  onSupply,
+  onScan,
+}: SpaceBaseDisplayProps) {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const [loadingThree, setLoadingThree] = useState(true);
+  const [threeError, setThreeError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let frameId: number | null = null;
+    let cleanup: (() => void) | null = null;
+
+    const initScene = async () => {
+      const THREE = await loadThree().catch(() => null);
+      if (!THREE || !mountRef.current) {
+        setThreeError('Three.js could not load. Check your connection and try again.');
+        setLoadingThree(false);
+        return;
+      }
+
+      setThreeError(null);
+      setLoadingThree(false);
+
+      const mount = mountRef.current;
+      const width = mount.clientWidth;
+      const height = mount.clientHeight;
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x050712, 0.035);
+
+      const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 100);
+      camera.position.set(0, 4.5, 11);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0x000000, 0);
+      mount.appendChild(renderer.domElement);
+
+      const ambient = new THREE.AmbientLight(0x88c9ff, 0.9);
+      const hemi = new THREE.HemisphereLight(0x6df0a8, 0x0b0f22, 0.6);
+      const point = new THREE.PointLight(0x5ad4ff, 2.4, 24);
+      point.position.set(4, 6, 4);
+      scene.add(ambient, hemi, point);
+
+      const baseGroup = new THREE.Group();
+      scene.add(baseGroup);
+
+      const core = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(1.6, 0),
+        new THREE.MeshStandardMaterial({
+          color: 0x5ad4ff,
+          metalness: 0.65,
+          roughness: 0.35,
+          emissive: 0x0b77c5,
+          emissiveIntensity: 0.7,
+        })
+      );
+      baseGroup.add(core);
+
+      const plating = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1.9, 1),
+        new THREE.MeshStandardMaterial({
+          color: 0x0f172a,
+          metalness: 0.3,
+          roughness: 0.8,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.25,
+        })
+      );
+      baseGroup.add(plating);
+
+      const habitatRing = new THREE.Mesh(
+        new THREE.TorusGeometry(3.2, 0.12, 22, 180),
+        new THREE.MeshStandardMaterial({
+          color: 0x9ae6ff,
+          emissive: 0x0f6f8f,
+          emissiveIntensity: 0.6,
+          metalness: 0.9,
+          roughness: 0.2,
+          transparent: true,
+          opacity: 0.85,
+        })
+      );
+      baseGroup.add(habitatRing);
+
+      const dockRing = new THREE.Mesh(
+        new THREE.TorusGeometry(2.2, 0.08, 16, 160),
+        new THREE.MeshStandardMaterial({
+          color: 0xff6bcb,
+          emissive: 0x7a1f4c,
+          emissiveIntensity: 0.45,
+          transparent: true,
+          opacity: 0.7,
+        })
+      );
+      dockRing.rotation.x = Math.PI / 2.4;
+      baseGroup.add(dockRing);
+
+      const arms = new THREE.Group();
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const arm = new THREE.Mesh(
+          new THREE.BoxGeometry(0.3, 0.3, 2.4),
+          new THREE.MeshStandardMaterial({
+            color: 0xe9f1ff,
+            metalness: 0.7,
+            roughness: 0.35,
+            emissive: 0x0c1f36,
+            emissiveIntensity: 0.5,
+          })
+        );
+        arm.position.set(Math.cos(angle) * 2.6, 0.15 * Math.sin(i), Math.sin(angle) * 2.6);
+        arm.lookAt(0, 0, 0);
+
+        const pod = new THREE.Mesh(
+          new THREE.SphereGeometry(0.32, 24, 16),
+          new THREE.MeshStandardMaterial({
+            color: 0x6df0a8,
+            emissive: 0x16412f,
+            emissiveIntensity: 0.9,
+            metalness: 0.4,
+            roughness: 0.1,
+          })
+        );
+        pod.position.set(Math.cos(angle) * 3.4, 0.2, Math.sin(angle) * 3.4);
+        arms.add(arm);
+        arms.add(pod);
+      }
+      baseGroup.add(arms);
+
+      const drones = new THREE.Group();
+      for (let i = 0; i < 26; i++) {
+        const phi = Math.random() * Math.PI * 2;
+        const theta = Math.random() * Math.PI;
+        const radius = 5 + Math.random() * 3;
+        const drone = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 12, 12),
+          new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        drone.position.set(
+          Math.cos(phi) * Math.sin(theta) * radius,
+          Math.cos(theta) * 0.8,
+          Math.sin(phi) * Math.sin(theta) * radius
+        );
+        drones.add(drone);
+      }
+      scene.add(drones);
+
+      const starGeom = new THREE.BufferGeometry();
+      const starCount = 420;
+      const positions = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 42;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 32;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 42;
+      }
+      starGeom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      const stars = new THREE.Points(
+        starGeom,
+        new THREE.PointsMaterial({ color: 0x5ad4ff, size: 0.06, transparent: true, opacity: 0.8 })
+      );
+      scene.add(stars);
+
+      const glow = new THREE.Mesh(
+        new THREE.RingGeometry(2.2, 3.2, 64),
+        new THREE.MeshBasicMaterial({ color: 0x5ad4ff, transparent: true, opacity: 0.2, side: THREE.DoubleSide })
+      );
+      glow.rotation.x = Math.PI / 2;
+      glow.position.y = -0.35;
+      baseGroup.add(glow);
+
+      const handleResize = () => {
+        if (!mount) return;
+        const { clientWidth, clientHeight } = mount;
+        camera.aspect = clientWidth / clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(clientWidth, clientHeight);
+      };
+      window.addEventListener('resize', handleResize);
+
+      const animate = () => {
+        baseGroup.rotation.y += 0.003;
+        habitatRing.rotation.z += 0.002;
+        dockRing.rotation.y += 0.002;
+        arms.rotation.y -= 0.002;
+        drones.rotation.y += 0.0015;
+        stars.rotation.y += 0.0008;
+        glow.rotation.z += 0.0015;
+        renderer.render(scene, camera);
+        frameId = requestAnimationFrame(animate);
+      };
+      animate();
+
+      cleanup = () => {
+        if (frameId) cancelAnimationFrame(frameId);
+        window.removeEventListener('resize', handleResize);
+        if (mount.contains(renderer.domElement)) {
+          mount.removeChild(renderer.domElement);
+        }
+        renderer.dispose();
+        scene.traverse((obj: any) => {
+          if (obj.geometry && typeof obj.geometry.dispose === 'function') obj.geometry.dispose();
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((mat) => mat.dispose?.());
+            } else if (typeof obj.material.dispose === 'function') {
+              obj.material.dispose();
+            }
+          }
+        });
+      };
+    };
+
+    initScene();
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
+
+  const topMenu = [
+    { title: 'Station Integrity', value: `${baseIntegrity}%`, detail: 'Hull & shielding stable' },
+    { title: 'Modules Online', value: modules.length.toString(), detail: 'Decks synced' },
+    { title: 'Energy Flow', value: `+${(resourceRates.energy ?? 0).toFixed(1)}/s`, detail: 'Grid nominal' },
+    { title: 'Research Uplink', value: `+${(resourceRates.research ?? 0).toFixed(1)}/s`, detail: 'Labs calibrated' },
+  ];
+
+  const leftMenu = [
+    { label: 'Power Core', value: `${resources.energy}/${capacity.energy}`, status: 'online' },
+    { label: 'Alloy Foundry', value: `${resources.alloys}/${capacity.alloys}`, status: 'online' },
+    { label: 'Credit Exchange', value: `${resources.credits}/${capacity.credits}`, status: 'stable' },
+    { label: 'Crew Pods', value: `${resources.crew}/${capacity.crew}`, status: 'nominal' },
+  ];
+
+  const rightMenu = projects.slice(0, 3).map((project) => ({
+    title: project.blueprint.name,
+    eta: `${project.remaining}s`,
+    status: project.remaining < project.blueprint.buildTime / 2 ? 'Accelerating' : 'Queued',
+  }));
+
+  const bottomMenu = [
+    { label: 'Supply Drop', action: onSupply, icon: '🚚', sub: 'Restore alloys & credits' },
+    { label: 'Deep Scan', action: onScan, icon: '🛰️', sub: 'Probe nearby sectors' },
+  ];
+
+  return (
+    <section className="panel space-base-panel holo-card">
+      <div className="panel-header">
+        <div>
+          <p className="panel-label">Orbital View</p>
+          <h3 className="panel-title">Space Base Command Center</h3>
+        </div>
+        <div className="hud-chip">
+          <span className="hud-label">Integrity</span>
+          <span className="hud-value">{baseIntegrity}%</span>
+        </div>
+      </div>
+
+      <div className="space-base-layout">
+        <div className="command-strip top">
+          <div className="strip-grid">
+            {topMenu.map((item) => (
+              <div key={item.title} className="strip-card">
+                <p className="strip-label">{item.title}</p>
+                <p className="strip-value">{item.value}</p>
+                <p className="strip-detail">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="command-strip left">
+          <p className="strip-heading">Systems</p>
+          <ul className="strip-list">
+            {leftMenu.map((item) => (
+              <li key={item.label} className={`strip-item ${item.status}`}>
+                <div>
+                  <p className="strip-label">{item.label}</p>
+                  <p className="strip-detail">{item.value}</p>
+                </div>
+                <span className="status-dot"></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-base-viewport" ref={mountRef}>
+          {loadingThree && <div className="viewport-overlay">Initializing Three.js viewport…</div>}
+          {threeError && <div className="viewport-overlay error">{threeError}</div>}
+          <div className="overlay-chips">
+            <span className="chip tiny alt">{modules.length} modules online</span>
+            <span className="chip tiny">Integrity {baseIntegrity}%</span>
+          </div>
+        </div>
+
+        <div className="command-strip right">
+          <p className="strip-heading">Build Queue</p>
+          <div className="strip-list">
+            {rightMenu.length === 0 && <p className="strip-detail">No active projects</p>}
+            {rightMenu.map((item) => (
+              <div key={item.title} className="strip-item queued">
+                <div>
+                  <p className="strip-label">{item.title}</p>
+                  <p className="strip-detail">{item.status}</p>
+                </div>
+                <span className="queue-chip">{item.eta}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="command-strip bottom">
+          <div className="bottom-actions">
+            {bottomMenu.map((item) => (
+              <button key={item.label} className="btn btn-secondary ghost" onClick={item.action}>
+                <span className="action-icon">{item.icon}</span>
+                <div>
+                  <p className="strip-label">{item.label}</p>
+                  <p className="strip-detail">{item.sub}</p>
+                </div>
+              </button>
+            ))}
+            <div className="mini-stat">
+              <p className="strip-label">Crew Vitality</p>
+              <p className="strip-value">{resources.crew}/{capacity.crew}</p>
+              <div className="stat-bar"><span style={{ width: `${Math.min(100, (resources.crew / capacity.crew) * 100)}%` }}></span></div>
+            </div>
+            <div className="mini-stat">
+              <p className="strip-label">Power Output</p>
+              <p className="strip-value">+{(resourceRates.energy ?? 0).toFixed(1)}/s</p>
+              <div className="stat-bar alt"><span style={{ width: '78%' }}></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 // Shared UI component
@@ -511,6 +901,17 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                   </div>
                 </div>
               </section>
+
+              <SpaceBaseDisplay
+                baseIntegrity={baseIntegrity}
+                modules={modules}
+                projects={projects}
+                resources={resources}
+                capacity={capacity}
+                resourceRates={resourceRates}
+                onSupply={() => triggerAction('supply')}
+                onScan={() => triggerAction('scan')}
+              />
 
               <section className="resource-bar">
                 {resourceStats.map((resource) => (
