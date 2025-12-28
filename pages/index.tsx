@@ -1,4 +1,175 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useMockAuth, MockUser } from '../lib/mock-auth';
+
+type ResourceKey = 'energy' | 'alloys' | 'credits' | 'research' | 'crew';
+type ResourceState = Record<ResourceKey, number>;
+
+interface ModuleBlueprint {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  cost: Partial<ResourceState>;
+  buildTime: number;
+  effects: {
+    rates?: Partial<ResourceState>;
+    capacity?: Partial<ResourceState>;
+    integrity?: number;
+  };
+  tags: string[];
+}
+
+interface ActiveModule {
+  instanceId: string;
+  blueprintId: string;
+  name: string;
+  category: string;
+  status: 'online' | 'damaged';
+  effects: ModuleBlueprint['effects'];
+  flavor: string;
+  integrity: number;
+  rarity: 'core' | 'advanced' | 'prototype';
+}
+
+interface Project {
+  id: string;
+  blueprint: ModuleBlueprint;
+  remaining: number;
+  startedAt: number;
+}
+
+interface MissionLogEntry {
+  id: string;
+  message: string;
+  tone: 'success' | 'warning' | 'info';
+}
+
+const BASE_CAPACITY: ResourceState = {
+  energy: 1200,
+  alloys: 900,
+  credits: 1100,
+  research: 500,
+  crew: 48,
+};
+
+const BASE_RATES: Partial<ResourceState> = {
+  energy: 3,
+  alloys: 1,
+  credits: 1,
+  research: 0.4,
+  crew: 0,
+};
+
+const BLUEPRINTS: ModuleBlueprint[] = [
+  {
+    id: 'solar-array',
+    name: 'Solar Array',
+    category: 'Power',
+    description: 'Extends the outer panels to keep fusion reserves topped up.',
+    cost: { alloys: 120, credits: 80 },
+    buildTime: 8,
+    effects: { rates: { energy: 6 }, capacity: { energy: 240 }, integrity: 6 },
+    tags: ['production', 'power'],
+  },
+  {
+    id: 'fabricator',
+    name: 'Alloy Fabricator',
+    category: 'Industry',
+    description: 'Breaks down scrap to feed the docking bay assembly lines.',
+    cost: { energy: 80, credits: 120 },
+    buildTime: 10,
+    effects: { rates: { alloys: 2.6 }, capacity: { alloys: 160 }, integrity: 4 },
+    tags: ['production', 'crafting'],
+  },
+  {
+    id: 'research-lab',
+    name: 'Quantum Lab',
+    category: 'Research',
+    description: 'Hosts zero-g research pods pushing mantle tech forward.',
+    cost: { alloys: 80, credits: 180, energy: 120 },
+    buildTime: 12,
+    effects: { rates: { research: 1.4 }, capacity: { research: 120 }, integrity: 5 },
+    tags: ['science', 'prototype'],
+  },
+  {
+    id: 'hab-ring',
+    name: 'Habitat Ring',
+    category: 'Habitation',
+    description: 'Adds living quarters, boosting crew morale and headcount.',
+    cost: { alloys: 140, energy: 90, credits: 60 },
+    buildTime: 9,
+    effects: { capacity: { crew: 12 }, integrity: 6 },
+    tags: ['support', 'crew'],
+  },
+  {
+    id: 'docking-bay',
+    name: 'Docking Bay',
+    category: 'Logistics',
+    description: 'Unlocks shuttle trade routes for rapid credit generation.',
+    cost: { alloys: 200, energy: 140, credits: 140 },
+    buildTime: 14,
+    effects: { rates: { credits: 3.5 }, capacity: { credits: 220 }, integrity: 7 },
+    tags: ['trade', 'production'],
+  },
+  {
+    id: 'shield-web',
+    name: 'Atmospheric Shield Web',
+    category: 'Defense',
+    description: 'Laces the hull with adaptive shielding, preventing outages.',
+    cost: { alloys: 160, energy: 180, research: 120 },
+    buildTime: 16,
+    effects: { integrity: 12 },
+    tags: ['defense', 'experimental'],
+  },
+];
+
+const STARTING_MODULES: ActiveModule[] = [
+  {
+    instanceId: 'core-1',
+    blueprintId: 'command-core',
+    name: 'Command Core',
+    category: 'Core',
+    status: 'online',
+    effects: {
+      rates: { energy: 2.5, credits: 1, research: 0.5 },
+      capacity: { energy: 260, credits: 120, research: 60 },
+      integrity: 16,
+    },
+    flavor: 'Primary operations block keeping the base afloat.',
+    integrity: 98,
+    rarity: 'core',
+  },
+  {
+    instanceId: 'reactor-1',
+    blueprintId: 'fusion-reactor',
+    name: 'Fusion Reactor',
+    category: 'Power',
+    status: 'online',
+    effects: {
+      rates: { energy: 8 },
+      capacity: { energy: 320 },
+      integrity: 8,
+    },
+    flavor: 'Produces steady energy for the build deck.',
+    integrity: 94,
+    rarity: 'advanced',
+  },
+  {
+    instanceId: 'fabricator-1',
+    blueprintId: 'fabricator',
+    name: 'Starter Fabricator',
+    category: 'Industry',
+    status: 'online',
+    effects: {
+      rates: { alloys: 1.6 },
+      capacity: { alloys: 140 },
+      integrity: 6,
+    },
+    flavor: 'Turning scavenged hulls into fresh alloys.',
+    integrity: 92,
+    rarity: 'advanced',
+  },
+];
 
 interface HomeContentProps {
   ready: boolean;
@@ -10,47 +181,237 @@ interface HomeContentProps {
 
 // Shared UI component
 function HomeContent({ ready, authenticated, user, login, logout }: HomeContentProps) {
-  const resourceStats = [
-    { label: 'Energy', value: '4,200', change: '+120/hr', icon: '⚡', fill: '76%' },
-    { label: 'Alloys', value: '1,860', change: '+45/hr', icon: '🪨', fill: '52%' },
-    { label: 'Credits', value: '9,450', change: '+310/hr', icon: '💳', fill: '68%' },
-    { label: 'Research', value: '620', change: '+18/hr', icon: '🔬', fill: '44%' },
-    { label: 'Crew', value: '42', change: 'Stable', icon: '👩‍🚀', fill: '84%' },
-  ];
+  const [resources, setResources] = useState<ResourceState>({
+    energy: 520,
+    alloys: 260,
+    credits: 320,
+    research: 90,
+    crew: 28,
+  });
+  const [modules, setModules] = useState<ActiveModule[]>(STARTING_MODULES);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedBlueprintId, setSelectedBlueprintId] = useState<string>(BLUEPRINTS[0].id);
+  const [log, setLog] = useState<MissionLogEntry[]>([
+    { id: 'log-0', message: 'Command deck initialized. All systems nominal.', tone: 'info' },
+  ]);
 
-  const buildingQueue = [
-    { name: 'Solar Array Extension', eta: '6m', cost: '320 Energy', benefit: '+12% energy cap' },
-    { name: 'Habitat Ring', eta: '12m', cost: '540 Alloys', benefit: '+10 crew capacity' },
-    { name: 'Docking Bay Mk.I', eta: '18m', cost: '680 Alloys', benefit: 'Unlocks shuttle trade' },
-  ];
+  const capacity = useMemo(() => {
+    return modules.reduce<ResourceState>(
+      (totals, module) => {
+        const capacityBoosts = module.effects.capacity ?? {};
+        (Object.keys(capacityBoosts) as ResourceKey[]).forEach((key) => {
+          totals[key] += capacityBoosts[key] ?? 0;
+        });
+        return totals;
+      },
+      { ...BASE_CAPACITY }
+    );
+  }, [modules]);
 
-  const techQueue = [
-    { name: 'Quantum Routing', eta: '9m', cost: '240 Research', benefit: 'Reduces build times by 5%' },
-    { name: 'Atmospheric Shields', eta: '14m', cost: '320 Research', benefit: '+15% base integrity' },
-  ];
+  const resourceRates = useMemo(() => {
+    return modules.reduce<Record<ResourceKey, number>>(
+      (totals, module) => {
+        const rateBoosts = module.effects.rates ?? {};
+        (Object.keys(rateBoosts) as ResourceKey[]).forEach((key) => {
+          totals[key] += rateBoosts[key] ?? 0;
+        });
+        return totals;
+      },
+      { energy: BASE_RATES.energy ?? 0, alloys: BASE_RATES.alloys ?? 0, credits: BASE_RATES.credits ?? 0, research: BASE_RATES.research ?? 0, crew: BASE_RATES.crew ?? 0 }
+    );
+  }, [modules]);
 
-  const crewOrders = [
-    { name: 'Lt. Mira Kade', role: 'Operations', task: 'Monitoring fusion core', status: 'Nominal', next: 'Schedule calibration' },
-    { name: 'Chief Rho Tan', role: 'Engineering', task: 'Supervising Solar Array extension', status: 'In progress', next: 'Deploy maintenance drones' },
-    { name: 'Dr. Nyla Orin', role: 'Science', task: 'Sequencing atmospheric shield lattice', status: 'Ready to deploy', next: 'Initiate field test' },
-    { name: 'Cmdr. Jex Hale', role: 'Security', task: 'Patrolling outer ring', status: 'Clear', next: 'Assign to docking bay' },
-  ];
+  const baseIntegrity = useMemo(() => {
+    const integrityFromModules = modules.reduce((total, module) => total + (module.effects.integrity ?? 0), 0);
+    const averageIntegrity = modules.length
+      ? modules.reduce((total, module) => total + module.integrity, 0) / modules.length
+      : 100;
+    return Math.min(100, Math.round((integrityFromModules / 2 + averageIntegrity) / 1.5));
+  }, [modules]);
 
-  const missionDirectives = [
-    { label: 'Stability', value: '93%', detail: 'Core vitals steady' },
-    { label: 'Readiness', value: 'Level 1', detail: 'Upgrade path unlocked' },
-    { label: 'Output', value: '+14% boost', detail: 'Efficiencies active' },
-  ];
+  const selectedBlueprint = BLUEPRINTS.find((bp) => bp.id === selectedBlueprintId) ?? BLUEPRINTS[0];
 
-  // Determine the connection button text
-  const getConnectionButtonText = () => {
-    return 'Connect Wallet (Mock)';
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setResources((prev) => {
+        const next = { ...prev };
+        (Object.keys(resourceRates) as ResourceKey[]).forEach((key) => {
+          const cap = capacity[key];
+          const updatedValue = (prev[key] ?? 0) + (resourceRates[key] ?? 0);
+          next[key] = Math.min(cap, Math.round((updatedValue + Number.EPSILON) * 10) / 10);
+        });
+        return next;
+      });
+
+      setProjects((prevProjects) => {
+        const updated = prevProjects.map((project) => ({
+          ...project,
+          remaining: Math.max(0, project.remaining - 1),
+        }));
+
+        const completed = updated.filter((project) => project.remaining === 0);
+        if (completed.length > 0) {
+          setModules((prevModules) => [
+            ...prevModules,
+            ...completed.map((project, index) => ({
+              instanceId: `${project.blueprint.id}-${Date.now()}-${index}`,
+              blueprintId: project.blueprint.id,
+              name: project.blueprint.name,
+              category: project.blueprint.category,
+              status: 'online' as const,
+              effects: project.blueprint.effects,
+              flavor: project.blueprint.description,
+              integrity: 90 + Math.floor(Math.random() * 10),
+              rarity: (project.blueprint.tags.includes('experimental') ? 'prototype' : 'advanced') as ActiveModule['rarity'],
+            })),
+          ]);
+
+          setLog((prevLog) => {
+            const entries: MissionLogEntry[] = completed.map((project) => ({
+              id: `complete-${project.id}`,
+              message: `${project.blueprint.name} is now online. Rates and integrity updated.`,
+              tone: 'success',
+            }));
+            const combined = [...prevLog, ...entries];
+            return combined.slice(-12);
+          });
+        }
+
+        return updated.filter((project) => project.remaining > 0);
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [resourceRates, capacity]);
+
+  const spendResources = (cost: Partial<ResourceState>) => {
+    setResources((prev) => {
+      const next = { ...prev };
+      (Object.keys(cost) as ResourceKey[]).forEach((key) => {
+        next[key] = Math.max(0, (prev[key] ?? 0) - (cost[key] ?? 0));
+      });
+      return next;
+    });
   };
 
-  // Determine the connection button icon
-  const getConnectionButtonIcon = () => {
-    return '🧪';
+  const queueBuild = (blueprint: ModuleBlueprint) => {
+    const affordable = (Object.keys(blueprint.cost) as ResourceKey[]).every((key) => {
+      return resources[key] >= (blueprint.cost[key] ?? 0);
+    });
+
+    if (!affordable) {
+      setLog((prevLog) => [
+        ...prevLog.slice(-11),
+        { id: `warn-${Date.now()}`, message: `Insufficient resources to build ${blueprint.name}.`, tone: 'warning' },
+      ]);
+      return;
+    }
+
+    spendResources(blueprint.cost);
+    const project: Project = {
+      id: `project-${Date.now()}`,
+      blueprint,
+      remaining: blueprint.buildTime,
+      startedAt: Date.now(),
+    };
+
+    setProjects((prev) => [...prev, project]);
+    setLog((prevLog) => [
+      ...prevLog.slice(-11),
+      { id: project.id, message: `${blueprint.name} added to construction queue.`, tone: 'info' },
+    ]);
   };
+
+  const boostProject = (projectId: string) => {
+    const energyCost = 60;
+    if (resources.energy < energyCost) {
+      setLog((prevLog) => [
+        ...prevLog.slice(-11),
+        { id: `boost-fail-${projectId}`, message: 'Not enough energy to overclock build drones.', tone: 'warning' },
+      ]);
+      return;
+    }
+
+    spendResources({ energy: energyCost });
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId
+          ? { ...project, remaining: Math.max(0, project.remaining - 3) }
+          : project
+      )
+    );
+    setLog((prevLog) => [
+      ...prevLog.slice(-11),
+      { id: `boost-${projectId}`, message: 'Drones overclocked: build time reduced by 3s.', tone: 'success' },
+    ]);
+  };
+
+  const triggerAction = (type: 'supply' | 'scan') => {
+    if (type === 'supply') {
+      const reward: Partial<ResourceState> = { alloys: 90, credits: 120 };
+      setResources((prev) => {
+        const next = { ...prev };
+        (Object.keys(reward) as ResourceKey[]).forEach((key) => {
+          next[key] = Math.min(capacity[key], prev[key] + (reward[key] ?? 0));
+        });
+        return next;
+      });
+      setLog((prevLog) => [
+        ...prevLog.slice(-11),
+        { id: `supply-${Date.now()}`, message: 'Supply shuttle docked: alloys and credits delivered.', tone: 'success' },
+      ]);
+    } else {
+      const bonus = Math.random() > 0.4 ? 1 : 0;
+      setLog((prevLog) => [
+        ...prevLog.slice(-11),
+        bonus
+          ? { id: `scan-${Date.now()}`, message: 'Deep scan found salvage pockets. Alloy yield improved temporarily.', tone: 'success' }
+          : { id: `scan-${Date.now()}`, message: 'Scan returned nominal. No immediate threats detected.', tone: 'info' },
+      ]);
+      if (bonus) {
+        setModules((prevModules) =>
+          prevModules.map((module, index) =>
+            index === 0
+              ? {
+                  ...module,
+                  effects: {
+                    ...module.effects,
+                    rates: {
+                      ...module.effects.rates,
+                      alloys: (module.effects.rates?.alloys ?? 0) + 0.6,
+                    },
+                  },
+                }
+              : module
+          )
+        );
+      }
+    }
+  };
+
+  const resourceStats = (Object.keys(resources) as ResourceKey[]).map((key) => {
+    const value = resources[key];
+    const rate = resourceRates[key] ?? 0;
+    const fill = Math.min(100, Math.round((value / capacity[key]) * 100));
+    const icons: Record<ResourceKey, string> = {
+      energy: '⚡',
+      alloys: '🪨',
+      credits: '💳',
+      research: '🔬',
+      crew: '👩‍🚀',
+    };
+
+    return {
+      label: key.charAt(0).toUpperCase() + key.slice(1),
+      value: value.toLocaleString(),
+      change: `${rate >= 0 ? '+' : ''}${rate.toFixed(1)}/s`,
+      icon: icons[key],
+      fill: `${fill}%`,
+    };
+  });
+
+  const connectionButtonText = 'Connect Wallet (Mock)';
+  const connectionButtonIcon = '🧪';
 
   return (
     <div className="page-wrapper">
@@ -81,8 +442,8 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                 </div>
               ) : (
                 <button className="btn btn-primary" onClick={login} disabled={!ready}>
-                  <span>{getConnectionButtonIcon()}</span>
-                  {getConnectionButtonText()}
+                  <span>{connectionButtonIcon}</span>
+                  {connectionButtonText}
                 </button>
               )}
             </div>
@@ -97,29 +458,55 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
               <section className="command-brief">
                 <div className="command-card holo-card">
                   <div className="brief-top">
-                    <span className="chip">Spacebase Level 1</span>
-                    <span className="status-pill online">Docked &amp; Secure</span>
+                    <span className="chip">Base Simulation Active</span>
+                    <span className="status-pill online">{projects.length ? 'Projects Queued' : 'Standing By'}</span>
                   </div>
-                  <h2 className="section-title small">Command Overview</h2>
-                  <p className="section-description">Welcome back, commander. Crew is awaiting your build directives.</p>
+                  <h2 className="section-title small">Build Your Space Base</h2>
+                  <p className="section-description">
+                    Queue construction, boost output, and watch your resource engines spin up in real time.
+                    Each module you bring online changes how the base behaves.
+                  </p>
                   <div className="brief-grid">
                     <div className="mini-map">
                       <div className="mini-map-grid">
                         <span className="map-node active">Core</span>
-                        <span className="map-node">Ring</span>
-                        <span className="map-node">Dock</span>
                         <span className="map-node">Hab</span>
+                        <span className="map-node">Dock</span>
+                        <span className="map-node">Ring</span>
                       </div>
-                      <p className="map-caption">Orbiting D-42 / Stable vector</p>
+                      <p className="map-caption">Integrity check: {baseIntegrity}% / Modules: {modules.length}</p>
+                      <div className="stat-bar">
+                        <span style={{ width: `${baseIntegrity}%` }}></span>
+                      </div>
+                      <div className="action-grid">
+                        <button className="btn btn-secondary" onClick={() => triggerAction('supply')}>
+                          🚚 Supply Drop
+                        </button>
+                        <button className="btn btn-secondary" onClick={() => triggerAction('scan')}>
+                          🛰️ Deep Scan
+                        </button>
+                      </div>
                     </div>
                     <div className="brief-stats">
-                      {missionDirectives.map((directive) => (
-                        <div key={directive.label} className="brief-stat">
-                          <div className="stat-label">{directive.label}</div>
-                          <div className="stat-value">{directive.value}</div>
-                          <div className="stat-detail">{directive.detail}</div>
+                      <div className="brief-stat">
+                        <div className="stat-label">Construction</div>
+                        <div className="stat-value">{projects.length ? `${projects.length} in queue` : 'Idle'}</div>
+                        <div className="stat-detail">Boost build speed with Energy</div>
+                      </div>
+                      <div className="brief-stat">
+                        <div className="stat-label">Production</div>
+                        <div className="stat-value">
+                          +{(resourceRates.energy ?? 0).toFixed(1)}⚡ / +{(resourceRates.alloys ?? 0).toFixed(1)}🪨 /s
                         </div>
-                      ))}
+                        <div className="stat-detail">Driven by online modules</div>
+                      </div>
+                      <div className="brief-stat">
+                        <div className="stat-label">Crew</div>
+                        <div className="stat-value">
+                          {resources.crew} / {capacity.crew}
+                        </div>
+                        <div className="stat-detail">Hab capacity grows with rings</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -147,44 +534,64 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                 <section className="panel base-overview holo-card">
                   <div className="panel-header">
                     <div>
-                      <p className="panel-label">Spacebase Level 1</p>
-                      <h3 className="panel-title">Habitat &amp; Control Ring</h3>
+                      <p className="panel-label">Base Layout</p>
+                      <h3 className="panel-title">Live Modules</h3>
                     </div>
-                    <button className="btn btn-secondary">Open Star Chart</button>
+                    <div className="hud-chip">
+                      <span className="hud-label">Integrity</span>
+                      <span className="hud-value">{baseIntegrity}%</span>
+                    </div>
                   </div>
                   <div className="base-status">
                     <div>
                       <p className="stat-label">Integrity</p>
-                      <p className="stat-value">87%</p>
-                      <div className="stat-bar"><span style={{ width: '87%' }}></span></div>
+                      <p className="stat-value">{baseIntegrity}%</p>
+                      <div className="stat-bar"><span style={{ width: `${baseIntegrity}%` }}></span></div>
                     </div>
                     <div>
                       <p className="stat-label">Power Flow</p>
-                      <p className="stat-value">+14%</p>
+                      <p className="stat-value">+{(resourceRates.energy ?? 0).toFixed(1)}/s</p>
                       <div className="stat-bar alt"><span style={{ width: '64%' }}></span></div>
                     </div>
                     <div>
-                      <p className="stat-label">Crew Morale</p>
-                      <p className="stat-value">Steady</p>
+                      <p className="stat-label">Research</p>
+                      <p className="stat-value">+{(resourceRates.research ?? 0).toFixed(1)}/s</p>
                       <div className="stat-bar"><span style={{ width: '72%' }}></span></div>
                     </div>
                   </div>
                   <div className="module-grid">
-                    <div className="module-card">
-                      <p className="module-label">Core</p>
-                      <p className="module-title">Fusion Reactor</p>
-                      <p className="module-detail">Producing 420 Energy / hr</p>
-                    </div>
-                    <div className="module-card">
-                      <p className="module-label">Logistics</p>
-                      <p className="module-title">Cargo Spines</p>
-                      <p className="module-detail">Dock throughput stable</p>
-                    </div>
-                    <div className="module-card">
-                      <p className="module-label">Habitation</p>
-                      <p className="module-title">Crew Pods</p>
-                      <p className="module-detail">42 / 50 berths occupied</p>
-                    </div>
+                    {modules.map((module) => (
+                      <div key={module.instanceId} className={`module-card ${module.rarity}`}>
+                        <p className="module-label">{module.category}</p>
+                        <p className="module-title">{module.name}</p>
+                        <p className="module-detail">{module.flavor}</p>
+                        <div className="module-effects">
+                          {module.effects.rates && (
+                            <div className="effect-line">
+                              <span>Output</span>
+                              <div className="tag-row">
+                                {(Object.entries(module.effects.rates) as [ResourceKey, number][]).map(([key, value]) => (
+                                  <span key={key} className="chip tiny">{`+${value}/s ${key}`}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {module.effects.capacity && (
+                            <div className="effect-line">
+                              <span>Cap</span>
+                              <div className="tag-row">
+                                {(Object.entries(module.effects.capacity) as [ResourceKey, number][]).map(([key, value]) => (
+                                  <span key={key} className="chip tiny alt">{`+${value} ${key}`}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="stat-bar">
+                          <span style={{ width: `${module.integrity}%` }}></span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </section>
 
@@ -192,43 +599,103 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                   <div className="panel-header">
                     <div>
                       <p className="panel-label">Construction</p>
-                      <h3 className="panel-title">Build Menu</h3>
+                      <h3 className="panel-title">Build Deck</h3>
                     </div>
-                    <button className="btn btn-primary">Queue Build</button>
+                    <button className="btn btn-primary" onClick={() => queueBuild(selectedBlueprint)}>
+                      Queue {selectedBlueprint.name}
+                    </button>
                   </div>
                   <div className="build-columns">
                     <div>
-                      <p className="panel-subtitle">Buildings</p>
-                      <div className="queue-list">
-                        {buildingQueue.map((item) => (
-                          <div key={item.name} className="queue-card">
-                            <div>
-                              <p className="queue-title">{item.name}</p>
-                              <p className="queue-detail">{item.benefit}</p>
-                            </div>
-                            <div className="queue-meta">
-                              <span className="queue-chip">ETA {item.eta}</span>
-                              <span className="queue-cost">{item.cost}</span>
-                            </div>
-                          </div>
-                        ))}
+                      <p className="panel-subtitle">Blueprints</p>
+                      <div className="build-deck">
+                        {BLUEPRINTS.map((blueprint) => {
+                          const affordable = (Object.keys(blueprint.cost) as ResourceKey[]).every(
+                            (key) => resources[key] >= (blueprint.cost[key] ?? 0)
+                          );
+                          return (
+                            <button
+                              key={blueprint.id}
+                              className={`build-card ${selectedBlueprintId === blueprint.id ? 'active' : ''}`}
+                              onClick={() => setSelectedBlueprintId(blueprint.id)}
+                            >
+                              <div className="build-card-header">
+                                <div>
+                                  <p className="module-label">{blueprint.category}</p>
+                                  <p className="module-title">{blueprint.name}</p>
+                                </div>
+                                <span className="queue-chip">{blueprint.buildTime}s</span>
+                              </div>
+                              <p className="queue-detail">{blueprint.description}</p>
+                              <div className="build-card-footer">
+                                <div className="cost-line">
+                                  {Object.entries(blueprint.cost).map(([key, value]) => (
+                                    <span key={key} className="cost-chip">
+                                      {key}: {value}
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className={`afford-status ${affordable ? 'online' : 'warning'}`}>
+                                  {affordable ? 'Ready to queue' : 'Need resources'}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     <div>
-                      <p className="panel-subtitle">Technology</p>
+                      <p className="panel-subtitle">Selected Module</p>
                       <div className="queue-list">
-                        {techQueue.map((item) => (
-                          <div key={item.name} className="queue-card alt">
-                            <div>
-                              <p className="queue-title">{item.name}</p>
-                              <p className="queue-detail">{item.benefit}</p>
-                            </div>
-                            <div className="queue-meta">
-                              <span className="queue-chip">ETA {item.eta}</span>
-                              <span className="queue-cost">{item.cost}</span>
+                        <div className="queue-card alt">
+                          <div>
+                            <p className="queue-title">{selectedBlueprint.name}</p>
+                            <p className="queue-detail">{selectedBlueprint.description}</p>
+                            <div className="tag-row">
+                              {selectedBlueprint.tags.map((tag) => (
+                                <span key={tag} className="chip tiny">{tag}</span>
+                              ))}
                             </div>
                           </div>
-                        ))}
+                          <div className="queue-meta">
+                            <span className="queue-chip">ETA {selectedBlueprint.buildTime}s</span>
+                            <span className="queue-cost">
+                              {Object.entries(selectedBlueprint.cost)
+                                .map(([key, value]) => `${key}: ${value}`)
+                                .join(' • ')}
+                            </span>
+                            <button className="btn btn-primary" onClick={() => queueBuild(selectedBlueprint)}>
+                              Start Build
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="panel-subtitle" style={{ marginTop: 12 }}>Construction Queue</p>
+                      <div className="queue-list">
+                        {projects.length === 0 && <p className="queue-detail">No active projects. Spin up a module.</p>}
+                        {projects.map((project) => {
+                          const percentage = Math.max(
+                            0,
+                            Math.round(((project.blueprint.buildTime - project.remaining) / project.blueprint.buildTime) * 100)
+                          );
+                          return (
+                            <div key={project.id} className="queue-card">
+                              <div>
+                                <p className="queue-title">{project.blueprint.name}</p>
+                                <p className="queue-detail">{project.blueprint.description}</p>
+                                <div className="stat-bar">
+                                  <span style={{ width: `${percentage}%` }}></span>
+                                </div>
+                              </div>
+                              <div className="queue-meta">
+                                <span className="queue-chip">{project.remaining}s left</span>
+                                <button className="btn btn-secondary" onClick={() => boostProject(project.id)}>
+                                  ⚡ Overclock
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -237,23 +704,16 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                 <section className="panel crew-ops holo-card">
                   <div className="panel-header">
                     <div>
-                      <p className="panel-label">Inhabitants</p>
-                      <h3 className="panel-title">Tasks &amp; Delegation</h3>
+                      <p className="panel-label">Mission Feed</p>
+                      <h3 className="panel-title">Log &amp; Events</h3>
                     </div>
-                    <button className="btn btn-secondary">Delegate Task</button>
+                    <button className="btn btn-secondary" onClick={() => setLog([])}>Clear Log</button>
                   </div>
-                  <div className="crew-grid">
-                    {crewOrders.map((crew) => (
-                      <div key={crew.name} className="crew-card">
-                        <div className="crew-header">
-                          <div>
-                            <p className="crew-name">{crew.name}</p>
-                            <p className="crew-role">{crew.role}</p>
-                          </div>
-                          <span className="crew-status">{crew.status}</span>
-                        </div>
-                        <p className="crew-task">{crew.task}</p>
-                        <p className="crew-next">Next: {crew.next}</p>
+                  <div className="log-feed">
+                    {log.map((entry) => (
+                      <div key={entry.id} className={`log-entry ${entry.tone}`}>
+                        <span className="log-dot">•</span>
+                        <p>{entry.message}</p>
                       </div>
                     ))}
                   </div>
@@ -268,36 +728,36 @@ function HomeContent({ ready, authenticated, user, login, logout }: HomeContentP
                 <div className="hero-left">
                   <div className="hero-badge">
                     <span className="badge-dot"></span>
-                    Galactic Command Console
+                    Base Builder Arcade
                   </div>
                   <h1 className="hero-title">
-                    Engage the <span className="gradient-text">Quantum Economy</span>
+                    Construct your <span className="gradient-text">Orbital Space Base</span>
                   </h1>
                   <p className="hero-description">
-                    Boot into an arcade-inspired control room where SPACE_BASES feels like a AAA launch menu.
-                    Mock wallet access keeps your squad moving fast while we wire up production systems.
+                    Connect and instantly start building. Queue modules, overclock drones, and watch resources tick up in real time
+                    with our mock wallet flow—no blockchain friction while you iterate.
                   </p>
                   <div className="menu-actions">
                     <button className="btn btn-large btn-primary" onClick={login} disabled={!ready}>
                       <span>▶</span>
-                      Launch Mission
+                      Enter Command Deck
                     </button>
                     <a href="#features" className="btn btn-large btn-outline">
-                      View Loadout
+                      Preview Systems
                     </a>
                   </div>
                   <div className="hero-metrics">
                     <div className="metric">
-                      <span className="metric-label">Server</span>
-                      <span className="metric-value">Mantle / Online</span>
+                      <span className="metric-label">Loop</span>
+                      <span className="metric-value">Build &amp; Boost</span>
                     </div>
                     <div className="metric">
                       <span className="metric-label">Mode</span>
-                      <span className="metric-value">Prototype Access</span>
+                      <span className="metric-value">Instant Mock Wallet</span>
                     </div>
                     <div className="metric">
-                      <span className="metric-label">Party</span>
-                      <span className="metric-value">Wallet Mocked</span>
+                      <span className="metric-label">Goal</span>
+                      <span className="metric-value">Orbit-Ready Base</span>
                     </div>
                   </div>
                 </div>
