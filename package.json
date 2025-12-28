@@ -2,11 +2,22 @@
   "name": "space-bases-landing",
   "version": "0.1.0",
   "private": true,
+  "description": "A next-generation DeFi prototype built with React and Next.js on the Mantle blockchain",
+  "keywords": [
+    "react",
+    "nextjs",
+    "typescript",
+    "defi",
+    "mantle",
+    "web3",
+    "blockchain"
+  ],
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify-react": "node scripts/verify-react.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",
@@ -18,5 +29,9 @@
     "@types/node": "20.6.0",
     "@types/react": "18.2.28",
     "typescript": "5.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

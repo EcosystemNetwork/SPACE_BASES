@@ -9,6 +9,7 @@
 - [Overview](#overview)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
+- [React Implementation](#react-implementation)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
@@ -35,12 +36,41 @@ This project is a Next.js application with TypeScript, optimized for deployment 
 
 ## 🛠 Tech Stack
 
-- **Framework**: [Next.js 14.2.0](https://nextjs.org/)
+- **Frontend Framework**: [React 18.2.0](https://react.dev/) - Built with React for optimal UI performance and developer experience
+- **React Framework**: [Next.js 14.2.0](https://nextjs.org/) - Production-grade React framework with SSR and SSG
 - **Language**: [TypeScript 5.5.6](https://www.typescriptlang.org/)
-- **UI Library**: [React 18.2.0](https://react.dev/)
+- **State Management**: React Context API with hooks (useState, useContext)
 - **Blockchain**: [Mantle Network](https://www.mantle.xyz/)
 - **Deployment**: [Vercel](https://vercel.com/)
 - **Styling**: Custom CSS with animations
+
+### React Features Used
+- ⚛️ React 18 with concurrent features
+- 🎣 React Hooks (useState, useContext, createContext)
+- 🔄 React Context API for global state
+- 📦 React components with TypeScript
+- 🎨 JSX/TSX for component templates
+- ⚡ Fast Refresh for instant feedback
+
+> **📚 Detailed React Documentation**: See [REACT.md](./REACT.md) for comprehensive React implementation details, patterns, and best practices used in this project.
+
+## React Implementation
+
+This project is **100% built with React**. Every UI component and interaction uses React's declarative programming model.
+
+**Quick Verification:**
+```bash
+npm run verify-react
+```
+
+**Key React Features:**
+- Functional components with TypeScript
+- React Hooks for state management
+- React Context API for authentication
+- Next.js as the React framework
+- React Strict Mode enabled
+
+For detailed React implementation guide, architecture, and patterns, see **[REACT.md](./REACT.md)**.
 
 ## 📁 Project Structure
 
