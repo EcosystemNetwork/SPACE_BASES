@@ -226,7 +226,7 @@ function SpaceBaseDisplay({
       scene.fog = new THREE.FogExp2(0x050712, 0.035);
 
       const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 100);
-      camera.position.set(0, 4.5, 11);
+      camera.position.set(0, 0, 11);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(width, height);
