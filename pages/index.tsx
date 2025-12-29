@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMockAuth, MockUser } from '../lib/mock-auth';
+import * as THREE from 'three';
 
 type ResourceKey = 'energy' | 'alloys' | 'credits' | 'research' | 'crew';
 type ResourceState = Record<ResourceKey, number>;
@@ -43,39 +44,6 @@ interface MissionLogEntry {
   message: string;
   tone: 'success' | 'warning' | 'info';
 }
-
-let threePromise: Promise<any> | null = null;
-
-const loadThree = () => {
-  if (typeof window === 'undefined') return Promise.resolve(null);
-  if ((window as any).THREE) return Promise.resolve((window as any).THREE);
-  if (threePromise) return threePromise;
-
-  threePromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>('script[data-threejs]');
-    if (existing) {
-      existing.addEventListener('load', () => resolve((window as any).THREE));
-      existing.addEventListener('error', () => {
-        threePromise = null;
-        reject(new Error('Three.js failed to load'));
-      });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js';
-    script.async = true;
-    script.dataset.threejs = 'true';
-    script.onload = () => resolve((window as any).THREE);
-    script.onerror = () => {
-      threePromise = null;
-      reject(new Error('Three.js failed to load'));
-    };
-    document.head.appendChild(script);
-  });
-
-  return threePromise;
-};
 
 const BASE_CAPACITY: ResourceState = {
   energy: 1200,
@@ -241,10 +209,9 @@ function SpaceBaseDisplay({
     let frameId: number | null = null;
     let cleanup: (() => void) | null = null;
 
-    const initScene = async () => {
-      const THREE = await loadThree().catch(() => null);
-      if (!THREE || !mountRef.current) {
-        setThreeError('Three.js could not load. Check your connection and try again.');
+    const initScene = () => {
+      if (!mountRef.current) {
+        setThreeError('Viewport not ready.');
         setLoadingThree(false);
         return;
       }
